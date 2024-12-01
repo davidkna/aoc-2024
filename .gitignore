@@ -1,0 +1,5 @@
+/target
+/inputs
+/.z3-trace
+*.gv
+*.png
