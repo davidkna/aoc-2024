@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 
 use bstr::ByteSlice;
 
-const INPUT: &[u8] = include_bytes!("../../inputs/day01.txt");
+const INPUT: &[u8] = include_bytes!("../../inputs/day-01.txt");
 
 fn parse_input(input: &[u8]) -> (Vec<u32>, Vec<u32>) {
     let (mut list1, mut list2): (Vec<u32>, Vec<u32>) = input
