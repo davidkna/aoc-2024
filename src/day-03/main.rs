@@ -14,7 +14,7 @@ fn part_1(input: &[u8]) -> u32 {
             for (i, &c) in input.iter().enumerate().skip(start + 4) {
                 match c {
                     b'0'..=b'9' => {
-                        first_digit = first_digit * 10 + (c - b'0') as u32;
+                        first_digit = first_digit * 10 + u32::from(c - b'0');
                     }
                     b',' => {
                         continue_at = Some(i + 1);
@@ -29,10 +29,10 @@ fn part_1(input: &[u8]) -> u32 {
             };
 
             let mut second_digit = 0;
-            for c in input[continue_at..].iter() {
+            for c in &input[continue_at..] {
                 match c {
                     b'0'..=b'9' => {
-                        second_digit = second_digit * 10 + (c - b'0') as u32;
+                        second_digit = second_digit * 10 + u32::from(c - b'0');
                     }
                     b')' => {
                         return first_digit * second_digit;
@@ -58,7 +58,6 @@ fn part_2(input: &[u8]) -> u32 {
 
         result += part_1(&input[idx..idx + end]);
 
-
         let end_of_chunk = idx + end + dont_finder.needle().len();
         let Some(do_start) = do_finder.find(&input[end_of_chunk..]) else {
             break;
@@ -79,8 +78,10 @@ mod tests {
 
     use super::*;
 
-    const EXAMPLE_01: &str = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
-    const EXAMPLE_02: &str = "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
+    const EXAMPLE_01: &str =
+        "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
+    const EXAMPLE_02: &str =
+        "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
 
     #[test]
     fn test_part_1() {
