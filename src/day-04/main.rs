@@ -15,11 +15,8 @@ fn count_xmas(input: &[&[u8]], x: isize, y: isize) -> u32 {
     [-1, 0, 1]
         .into_iter()
         .cartesian_product([-1, 0, 1])
+        .filter(|&(dx, dy)| (dx, dy) != (0, 0))
         .map(|(delta_x, delta_y)| {
-            if delta_x == 0 && delta_y == 0 {
-                return 0;
-            }
-
             u32::from(
                 std::iter::zip(
                     (1..).map(|i| x + delta_x * i),
