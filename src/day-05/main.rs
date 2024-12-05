@@ -44,32 +44,31 @@ fn part_1(input: &[u8]) -> u32 {
         .sum()
 }
 
-fn toposort(items: Vec<usize>, rules: &[[bool; 100]; 100]) -> Vec<usize> {
+fn toposort(items: &[usize], rules: &[[bool; 100]; 100]) -> Vec<usize> {
     let mut visited = [false; 100];
     let mut stack = Vec::with_capacity(items.len());
     let mut result = vec![];
 
     fn dfs(
         node: usize,
-        items: &[usize],
         visited: &mut [bool; 100],
         stack: &mut Vec<usize>,
         rules: &[[bool; 100]; 100],
     ) {
         visited[node] = true;
 
-        for (i, rule) in items.iter().map(|&i| (i, rules[node][i])) {
+        for (i, &rule) in (0..100).zip(rules[node].iter()) {
             if rule && !visited[i] {
-                dfs(i, items, visited, stack, rules);
+                dfs(i, visited, stack, rules);
             }
         }
 
         stack.push(node);
     }
 
-    for &item in &items {
+    for &item in items {
         if !visited[item] {
-            dfs(item, &items, &mut visited, &mut stack, rules);
+            dfs(item, &mut visited, &mut stack, rules);
         }
     }
 
@@ -97,12 +96,25 @@ fn part_2(input: &[u8]) -> u32 {
         acc
     });
 
+    let sorted = {
+        let items: [usize; 100] = std::array::from_fn(|i| i);
+        toposort(&items, &rules)
+    };
+
+    let sorted_pos = sorted
+        .into_iter()
+        .enumerate()
+        .fold([0; 100], |mut acc, (i, n)| {
+            acc[n] = i;
+            acc
+        });
+
     instructions
         .lines()
         .filter_map(|line| {
             let mut acc: Vec<usize> = vec![];
 
-            let ins = line
+            let mut ins = line
                 .split_str(",")
                 .map(|n| unsafe { n.to_str_unchecked() }.parse::<usize>().unwrap())
                 .collect_vec();
@@ -113,8 +125,12 @@ fn part_2(input: &[u8]) -> u32 {
                     acc.push(n);
                     !cond
                 })
-                .then(|| toposort(ins, &rules))
-                .map(|sorted| sorted[sorted.len() / 2] as u32)
+                .then(|| {
+                    let target_idx = ins.len() / 2;
+                    let (_, result, _) =
+                        ins.select_nth_unstable_by_key(target_idx / 2, |&n| sorted_pos[n]);
+                    *result as u32
+                })
         })
         .sum()
 }
