@@ -58,7 +58,7 @@ fn parse_input(input: &[u8]) -> ((i32, i32, Direction), Vec<Vec<Tile>>) {
     (robot, map)
 }
 
-fn part_1(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
+fn part_1_helper(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> FnvHashSet<(i32, i32)> {
     let mut visisted = FnvHashSet::default();
     visisted.insert((robot.0, robot.1));
 
@@ -73,7 +73,7 @@ fn part_1(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
         };
 
         if next_x < 0 || next_y < 0 {
-            break;
+            return visisted;
         }
 
         match map
@@ -87,14 +87,18 @@ fn part_1(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
             Some(Tile::Scaffold) => {
                 robot = (x, y, dir.turn_right());
             }
-            None => break,
+            None => return visisted,
         }
     }
+}
+
+fn part_1(robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
+    let visisted = part_1_helper(robot, map);
 
     visisted.len() as u32
 }
 
-fn robot_run(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> bool {
+fn robot_is_loop(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> bool {
     let mut visisted = FnvHashSet::default();
     visisted.insert(robot);
 
@@ -134,23 +138,25 @@ fn robot_run(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> bool {
 fn part_2(robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
     let (robot_x, robot_y, _) = robot;
 
-    (0..map.len())
-        .into_par_iter()
-        .map(|y| {
-            (0..map[y].len())
-                .into_par_iter()
-                .filter(|&x| {
-                    (x, y) != (robot_x as usize, robot_y as usize) && map[y][x] == Tile::Empty
-                })
-                .filter(|&x| {
-                    let mut map_copy = map.to_vec();
-                    map_copy[y][x] = Tile::Scaffold;
-
-                    robot_run(robot, &map_copy)
-                })
-                .count() as u32
+    let eligible_points = part_1_helper(robot, map)
+        .into_iter()
+        .filter(|&(x, y)| {
+            (x, y) != (robot_x, robot_y)
+                && map
+                    .get(y as usize)
+                    .map_or(false, |row| row.get(x as usize) == Some(&Tile::Empty))
         })
-        .sum()
+        .collect_vec();
+
+    eligible_points
+        .into_par_iter()
+        .filter(|&(x, y)| {
+            let mut map_copy = map.to_vec();
+            map_copy[y as usize][x as usize] = Tile::Scaffold;
+
+            robot_is_loop(robot, &map_copy)
+        })
+        .count() as u32
 }
 
 fn main() {
