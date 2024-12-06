@@ -58,7 +58,47 @@ fn parse_input(input: &[u8]) -> ((i32, i32, Direction), Vec<Vec<Tile>>) {
     (robot, map)
 }
 
-fn part_1_helper(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> FnvHashSet<(i32, i32)> {
+fn get_part_1_path(
+    mut robot: (i32, i32, Direction),
+    map: &[Vec<Tile>],
+) -> Vec<(i32, i32, Direction)> {
+    let mut visisted = FnvHashSet::default();
+    visisted.insert((robot.0, robot.1));
+
+    let mut path = vec![];
+
+    loop {
+        let (x, y, dir) = robot;
+
+        let (next_x, next_y) = match dir {
+            Direction::North => (x, y - 1),
+            Direction::East => (x + 1, y),
+            Direction::South => (x, y + 1),
+            Direction::West => (x - 1, y),
+        };
+
+        if next_x < 0 || next_y < 0 {
+            return path;
+        }
+
+        match map
+            .get(next_y as usize)
+            .and_then(|row| row.get(next_x as usize))
+        {
+            Some(Tile::Empty) => {
+                visisted.insert((next_x, next_y));
+                path.push((next_x, next_y, dir));
+                robot = (next_x, next_y, dir);
+            }
+            Some(Tile::Scaffold) => {
+                robot = (x, y, dir.turn_right());
+            }
+            None => return path,
+        }
+    }
+}
+
+fn part_1(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
     let mut visisted = FnvHashSet::default();
     visisted.insert((robot.0, robot.1));
 
@@ -73,7 +113,7 @@ fn part_1_helper(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> FnvHash
         };
 
         if next_x < 0 || next_y < 0 {
-            return visisted;
+            return visisted.len() as u32;
         }
 
         match map
@@ -87,15 +127,9 @@ fn part_1_helper(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> FnvHash
             Some(Tile::Scaffold) => {
                 robot = (x, y, dir.turn_right());
             }
-            None => return visisted,
+            None => return visisted.len() as u32,
         }
     }
-}
-
-fn part_1(robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
-    let visisted = part_1_helper(robot, map);
-
-    visisted.len() as u32
 }
 
 fn robot_is_loop(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> bool {
@@ -135,18 +169,20 @@ fn robot_is_loop(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> bool {
 }
 
 fn part_2(robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
-    let (robot_x, robot_y, _) = robot;
-
-    part_1_helper(robot, map)
+    get_part_1_path(robot, map)
         .into_par_iter()
-        .filter(|&(x, y)| {
-            (x, y) != (robot_x, robot_y) && map[y as usize][x as usize] == Tile::Empty
-        })
-        .filter(|&(x, y)| {
+        .filter(|&(x, y, d)| {
             let mut map_copy = map.to_vec();
             map_copy[y as usize][x as usize] = Tile::Scaffold;
 
-            robot_is_loop(robot, &map_copy)
+            let r = match d {
+                Direction::North => (x, y + 1, d.turn_right()),
+                Direction::East => (x - 1, y, d.turn_right()),
+                Direction::South => (x, y - 1, d.turn_right()),
+                Direction::West => (x + 1, y, d.turn_right()),
+            };
+
+            robot_is_loop(r, &map_copy)
         })
         .count() as u32
 }
