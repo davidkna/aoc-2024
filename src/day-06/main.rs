@@ -137,18 +137,11 @@ fn robot_is_loop(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> bool {
 fn part_2(robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> u32 {
     let (robot_x, robot_y, _) = robot;
 
-    let eligible_points = part_1_helper(robot, map)
-        .into_iter()
-        .filter(|&(x, y)| {
-            (x, y) != (robot_x, robot_y)
-                && map
-                    .get(y as usize)
-                    .map_or(false, |row| row.get(x as usize) == Some(&Tile::Empty))
-        })
-        .collect_vec();
-
-    eligible_points
+    part_1_helper(robot, map)
         .into_par_iter()
+        .filter(|&(x, y)| {
+            (x, y) != (robot_x, robot_y) && map[y as usize][x as usize] == Tile::Empty
+        })
         .filter(|&(x, y)| {
             let mut map_copy = map.to_vec();
             map_copy[y as usize][x as usize] = Tile::Scaffold;
