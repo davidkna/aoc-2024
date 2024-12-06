@@ -188,6 +188,11 @@ mod tests {
     }
 
     #[bench]
+    fn bench_parse_input(b: &mut test::Bencher) {
+        b.iter(|| parse_input(black_box(INPUT)));
+    }
+
+    #[bench]
     fn bench_part_1(b: &mut test::Bencher) {
         let (robot, map) = parse_input(INPUT);
         b.iter(|| part_1(black_box(robot), black_box(&map)));
