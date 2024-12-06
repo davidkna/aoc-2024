@@ -125,12 +125,11 @@ fn robot_is_loop(mut robot: (i32, i32, Direction), map: &[Vec<Tile>]) -> bool {
             }
             Some(Tile::Scaffold) => {
                 robot = (x, y, dir.turn_right());
+                if !visisted.insert(robot) {
+                    return true;
+                }
             }
             None => return false,
-        }
-
-        if !visisted.insert(robot) {
-            return true;
         }
     }
 }
