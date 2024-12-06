@@ -25,9 +25,9 @@ path = "src/day-04/main.rs"
 name = "day-05"
 path = "src/day-05/main.rs"
 
-# [[bin]]
-# name = "day-06"
-# path = "src/day-06/main.rs"
+[[bin]]
+name = "day-06"
+path = "src/day-06/main.rs"
 
 # [[bin]]
 # name = "day-07"
@@ -113,3 +113,4 @@ bstr = "1.11.0"
 fnv = "1.0.7"
 itertools = "0.13.0"
 mimalloc-rust = "0.2.1"
+rayon = "1.10.0"
