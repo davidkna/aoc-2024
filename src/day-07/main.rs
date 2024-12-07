@@ -20,15 +20,15 @@ impl Operation {
             Operation::Add => a + b,
             Operation::Mul => a * b,
             Operation::Concat => {
-                let mut multiplier = 1;
+                let mut a_shifted = a;
                 let mut n = b;
 
                 while n > 0 {
-                    multiplier *= 10;
+                    a_shifted *= 10;
                     n /= 10;
                 }
 
-                a * multiplier + b
+                a_shifted + b
             }
         }
     }
