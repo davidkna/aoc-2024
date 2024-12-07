@@ -21,11 +21,19 @@ impl Operation {
             Operation::Mul => a * b,
             Operation::Concat => {
                 let mut a_shifted = a;
-                let mut n = b;
 
-                while n > 0 {
+                if b >= 10 {
+                    if b >= 100 {
+                        if b >= 1_000 {
+                            a_shifted *= 10_000;
+                        } else {
+                            a_shifted *= 1_000;
+                        }
+                    } else {
+                        a_shifted *= 100;
+                    }
+                } else {
                     a_shifted *= 10;
-                    n /= 10;
                 }
 
                 a_shifted + b
