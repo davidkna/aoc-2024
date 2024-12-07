@@ -52,24 +52,27 @@ fn solve(input: &[u8], ops: &[Operation]) -> u64 {
         .collect_vec()
         .into_par_iter()
         .filter_map(|line| {
-            let (target, numbers) = line.split_once_str(": ").unwrap();
-            let target = parse_uint(target);
-            let numbers = numbers.split_str(" ").map(parse_uint).collect_vec();
+            let (target, numbers) = {
+                let (prefix, suffix) = line.split_once_str(": ").unwrap();
+                (
+                    parse_uint(prefix),
+                    suffix.split_str(" ").map(parse_uint).collect_vec(),
+                )
+            };
 
             let mut stack = vec![(1, numbers[0])];
 
             while let Some((idx, result)) = stack.pop() {
-                if idx == numbers.len() {
-                    if result == target {
-                        return Some(target);
-                    }
-                    continue;
-                }
+                let is_last = idx + 1 == numbers.len();
 
                 for op in ops {
-                    let r = op.execute(result, numbers[idx]);
-                    if r <= target {
-                        stack.push((idx + 1, r));
+                    let next = op.execute(result, numbers[idx]);
+                    if is_last && next == target {
+                        return Some(target);
+                    }
+
+                    if !is_last && next < target {
+                        stack.push((idx + 1, next));
                     }
                 }
             }
