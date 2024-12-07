@@ -20,23 +20,21 @@ impl Operation {
             Operation::Add => a + b,
             Operation::Mul => a * b,
             Operation::Concat => {
-                let mut a_shifted = a;
-
-                if b >= 10 {
+                let a_shift = if b >= 10 {
                     if b >= 100 {
                         if b >= 1_000 {
-                            a_shifted *= 10_000;
+                            10_000
                         } else {
-                            a_shifted *= 1_000;
+                            1_000
                         }
                     } else {
-                        a_shifted *= 100;
+                        100
                     }
                 } else {
-                    a_shifted *= 10;
-                }
+                    10
+                };
 
-                a_shifted + b
+                a * a_shift + b
             }
         }
     }
