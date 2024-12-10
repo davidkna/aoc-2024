@@ -2,7 +2,6 @@
 extern crate test;
 
 use bstr::ByteSlice;
-use fnv::FnvHashSet;
 use itertools::Itertools;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-10.txt");
@@ -31,20 +30,45 @@ fn part_1(input: &[u8]) -> u64 {
         })
         .collect_vec();
 
-    let mut cache = vec![vec![None; map[0].len()]; map.len()];
+    let target_positions = map
+        .iter()
+        .enumerate()
+        .flat_map(|(y, row)| {
+            row.iter()
+                .enumerate()
+                .filter_map(move |(x, &height)| (height == 9).then_some((y, x)))
+                .filter(|&(y, x)| {
+                    [(0, 1), (1, 0), (0, -1), (-1, 0)].iter().any(|(dy, dx)| {
+                        let (ny, nx) = (y as i32 + dy, x as i32 + dx);
+                        ny >= 0
+                            && ny < map.len() as i32
+                            && nx >= 0
+                            && nx < map[0].len() as i32
+                            && map[ny as usize][nx as usize] == 8
+                    })
+                })
+        })
+        .collect_vec();
 
+    let mut cache = vec![vec![None; map[0].len()]; map.len()];
     start_positions
         .iter()
-        .map(|&(y, x)| find_path_rating(&map, &mut cache, y, x).len() as u64)
+        .map(|&(y, x)| {
+            find_path_rating(&map, &mut cache, y, x, &target_positions)
+                .into_iter()
+                .map(|v| v.count_ones() as u64)
+                .sum::<u64>()
+        })
         .sum()
 }
 
 fn find_path_rating(
     map: &Vec<Vec<u8>>,
-    cache: &mut Vec<Vec<Option<FnvHashSet<(usize, usize)>>>>,
+    cache: &mut Vec<Vec<Option<[u64; 3]>>>,
     y: usize,
     x: usize,
-) -> FnvHashSet<(usize, usize)> {
+    target_positions: &[(usize, usize)],
+) -> [u64; 3] {
     if let Some(value) = &cache[y][x] {
         return value.clone();
     }
@@ -59,22 +83,38 @@ fn find_path_rating(
             if ny >= 0 && ny < map.len() as i32 && nx >= 0 && nx < map[0].len() as i32 {
                 let next_value = map[ny as usize][nx as usize];
                 if next_value == 9 && next_value == curr_value + 1 {
-                    let mut set = FnvHashSet::default();
-                    set.insert((ny as usize, nx as usize));
-                    return Some(set);
+                    let pos = target_positions
+                        .iter()
+                        .position(|&(ty, tx)| (ny as usize, nx as usize) == (ty, tx))
+                        .unwrap() as u32;
+
+                    let mut out = [0; 3];
+                    if pos >= u64::BITS * 2 {
+                        out[2] = 1 << (pos - u64::BITS * 2);
+                    } else if pos >= u64::BITS {
+                        out[1] = 1 << (pos - u64::BITS);
+                    } else {
+                        out[0] = 1 << pos;
+                    }
+
+                    return Some(out);
                 } else if next_value == curr_value + 1 {
                     return Some(find_path_rating(
                         map,
                         cache,
                         ny as usize,
                         nx as usize,
+                        target_positions,
                     ));
                 };
             }
             None
         })
-        .fold(FnvHashSet::default(), |acc, set| {
-            acc.union(&set).copied().collect()
+        .fold([0u64; 3], |mut acc, set| {
+            acc[0] |= set[0];
+            acc[1] |= set[1];
+            acc[2] |= set[2];
+            acc
         });
 
     cache[y][x] = Some(reachable.clone());
@@ -135,12 +175,7 @@ fn find_path_rating2(
                 if next_value == 9 && next_value == curr_value + 1 {
                     return Some(1);
                 } else if next_value == curr_value + 1 {
-                    return Some(find_path_rating2(
-                        map,
-                        cache,
-                        ny as usize,
-                        nx as usize,
-                    ));
+                    return Some(find_path_rating2(map, cache, ny as usize, nx as usize));
                 };
             }
             None
