@@ -69,8 +69,8 @@ fn find_path_rating(
     x: usize,
     target_positions: &[(usize, usize)],
 ) -> [u64; 3] {
-    if let Some(value) = &cache[y][x] {
-        return value.clone();
+    if let Some(value) = cache[y][x] {
+        return value;
     }
 
     let curr_value = map[y][x];
@@ -117,7 +117,7 @@ fn find_path_rating(
             acc
         });
 
-    cache[y][x] = Some(reachable.clone());
+    cache[y][x] = Some(reachable);
     reachable
 }
 

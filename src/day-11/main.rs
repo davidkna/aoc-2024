@@ -5,7 +5,7 @@ use bstr::ByteSlice;
 use fnv::FnvHashMap;
 use itertools::Itertools;
 
-const INPUT: &[u8] = include_bytes!("../../inputs/day-11.txt"); // xxx
+const INPUT: &[u8] = include_bytes!("../../inputs/day-11.txt");
 
 fn parse_uint(s: &[u8]) -> u64 {
     s.iter().fold(0, |acc, &c| acc * 10 + (c - b'0') as u64)
@@ -72,11 +72,6 @@ mod tests {
     #[test]
     fn test_part_1() {
         assert_eq!(part_1(EXAMPLE.as_bytes()), 55312);
-    }
-
-    #[test]
-    fn test_part_2() {
-        assert_eq!(part_2(EXAMPLE.as_bytes()), 81);
     }
 
     #[bench]

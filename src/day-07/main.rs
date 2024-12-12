@@ -17,9 +17,9 @@ impl Operation {
     #[inline]
     fn execute(&self, a: u64, b: u64) -> u64 {
         match self {
-            Operation::Add => a + b,
-            Operation::Mul => a * b,
-            Operation::Concat => {
+            Self::Add => a + b,
+            Self::Mul => a * b,
+            Self::Concat => {
                 let a_shift = if b >= 10 {
                     if b >= 100 {
                         if b >= 1_000 {
