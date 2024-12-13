@@ -13,37 +13,33 @@ fn solve(input: &[u8], part2: bool) -> u64 {
     input
         .split_str("\n\n")
         .map(|section| {
-            let mut lines = section.lines();
-
-            let button_a = unsafe { lines.next().unwrap_unchecked() };
             let (button_a_x, button_a_y) = {
                 let x = unsafe {
-                    10 * (button_a.get_unchecked(12) - b'0') + (button_a.get_unchecked(13) - b'0')
+                    10 * (section.get_unchecked(12) - b'0') + (section.get_unchecked(13) - b'0')
                 } as i64;
                 let y = unsafe {
-                    10 * (button_a.get_unchecked(18) - b'0') + (button_a.get_unchecked(19) - b'0')
+                    10 * (section.get_unchecked(18) - b'0') + (section.get_unchecked(19) - b'0')
                 } as i64;
 
                 (x, y)
             };
 
-            let button_b = unsafe { lines.next().unwrap_unchecked() };
             let (button_b_x, button_b_y) = {
                 let x = unsafe {
-                    10 * (button_b.get_unchecked(12) - b'0') + (button_b.get_unchecked(13) - b'0')
+                    10 * (section.get_unchecked(33) - b'0') + (section.get_unchecked(3413) - b'0')
                 } as i64;
                 let y = unsafe {
-                    10 * (button_b.get_unchecked(18) - b'0') + (button_b.get_unchecked(19) - b'0')
+                    10 * (section.get_unchecked(39) - b'0') + (section.get_unchecked(40) - b'0')
                 } as i64;
 
                 (x, y)
             };
 
             let (target_x, target_y) = {
-                let target = unsafe { lines.next().unwrap_unchecked() };
+                let target = unsafe { section.get_unchecked(51..) };
                 let (l, r) = unsafe { target.split_once_str(", ").unwrap_unchecked() };
 
-                let tx = parse_digits(unsafe { &l.get_unchecked(9..) });
+                let tx = parse_digits(l);
                 let ty = parse_digits(r);
 
                 if part2 {
