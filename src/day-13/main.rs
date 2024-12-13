@@ -9,15 +9,6 @@ fn parse_digits(s: &[u8]) -> i64 {
     s.iter().fold(0, |acc, &c| acc * 10 + (c - b'0') as i64)
 }
 
-fn parse_coords(s: &[u8], prefix: &[u8]) -> (i64, i64) {
-    let (l, r) = unsafe { s.split_once_str(", ").unwrap_unchecked() };
-
-    let (_, x_str) = unsafe { l.split_once_str(prefix).unwrap_unchecked() };
-    let (_, y_str) = unsafe { r.split_once_str(prefix).unwrap_unchecked() };
-
-    (parse_digits(x_str), parse_digits(y_str))
-}
-
 fn solve(input: &[u8], part2: bool) -> u64 {
     input
         .split_str("\n\n")
@@ -25,14 +16,35 @@ fn solve(input: &[u8], part2: bool) -> u64 {
             let mut lines = section.lines();
 
             let button_a = unsafe { lines.next().unwrap_unchecked() };
-            let (button_a_x, button_a_y) = parse_coords(button_a, b"+");
+            let (button_a_x, button_a_y) = {
+                let x = unsafe {
+                    10 * (button_a.get_unchecked(12) - b'0') + (button_a.get_unchecked(13) - b'0')
+                } as i64;
+                let y = unsafe {
+                    10 * (button_a.get_unchecked(18) - b'0') + (button_a.get_unchecked(19) - b'0')
+                } as i64;
+
+                (x, y)
+            };
 
             let button_b = unsafe { lines.next().unwrap_unchecked() };
-            let (button_b_x, button_b_y) = parse_coords(button_b, b"+");
+            let (button_b_x, button_b_y) = {
+                let x = unsafe {
+                    10 * (button_b.get_unchecked(12) - b'0') + (button_b.get_unchecked(13) - b'0')
+                } as i64;
+                let y = unsafe {
+                    10 * (button_b.get_unchecked(18) - b'0') + (button_b.get_unchecked(19) - b'0')
+                } as i64;
+
+                (x, y)
+            };
 
             let (target_x, target_y) = {
                 let target = unsafe { lines.next().unwrap_unchecked() };
-                let (tx, ty) = parse_coords(target, b"=");
+                let (l, r) = unsafe { target.split_once_str(", ").unwrap_unchecked() };
+
+                let tx = parse_digits(unsafe { &l.get_unchecked(9..) });
+                let ty = parse_digits(r);
 
                 if part2 {
                     (tx + 10000000000000, ty + 10000000000000)
