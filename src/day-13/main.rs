@@ -2,7 +2,6 @@
 extern crate test;
 
 use bstr::ByteSlice;
-use itertools::Itertools;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-13.txt");
 
@@ -10,23 +9,30 @@ fn parse_digits(s: &[u8]) -> i64 {
     s.iter().fold(0, |acc, &c| acc * 10 + (c - b'0') as i64)
 }
 
-fn solve(input: &[u8], part2: bool) -> u64 {
-    let cost_button_a = 3i64;
-    let cost_button_b = 1i64;
+fn parse_coords(s: &[u8], prefix: &[u8]) -> (i64, i64) {
+    let (l, r) = unsafe { s.split_once_str(", ").unwrap_unchecked() };
 
+    let (_, x_str) = unsafe { l.split_once_str(prefix).unwrap_unchecked() };
+    let (_, y_str) = unsafe { r.split_once_str(prefix).unwrap_unchecked() };
+
+    (parse_digits(x_str), parse_digits(y_str))
+}
+
+fn solve(input: &[u8], part2: bool) -> u64 {
     input
         .split_str("\n\n")
         .map(|section| {
-            let lines = section.lines();
-            let (button_a, button_b, prize) = lines.collect_tuple().unwrap();
+            let mut lines = section.lines();
+
+            let button_a = unsafe { lines.next().unwrap_unchecked() };
+            let (button_a_x, button_a_y) = parse_coords(button_a, b"+");
+
+            let button_b = unsafe { lines.next().unwrap_unchecked() };
+            let (button_b_x, button_b_y) = parse_coords(button_b, b"+");
 
             let (target_x, target_y) = {
-                let (l, r) = prize.split_once_str(", ").unwrap();
-
-                let (_, x_str) = l.split_once_str("=").unwrap();
-                let (_, y_str) = r.split_once_str("=").unwrap();
-
-                let (tx, ty) = (parse_digits(x_str), parse_digits(y_str));
+                let target = unsafe { lines.next().unwrap_unchecked() };
+                let (tx, ty) = parse_coords(target, b"=");
 
                 if part2 {
                     (tx + 10000000000000, ty + 10000000000000)
@@ -35,30 +41,11 @@ fn solve(input: &[u8], part2: bool) -> u64 {
                 }
             };
 
-            let (button_a_x, button_a_y) = {
-                let (l, r) = button_a.split_once_str(", ").unwrap();
-
-                let (_, x_str) = l.split_once_str("+").unwrap();
-                let (_, y_str) = r.split_once_str("+").unwrap();
-
-                (parse_digits(x_str), parse_digits(y_str))
-            };
-
-            let (button_b_x, button_b_y) = {
-                let (l, r) = button_b.split_once_str(", ").unwrap();
-
-                let (_, x_str) = l.split_once_str("+").unwrap();
-                let (_, y_str) = r.split_once_str("+").unwrap();
-
-                (parse_digits(x_str), parse_digits(y_str))
-            };
-
             // x_1 * button_a_x + x_2 * button_b_x = target_x
             // x_1 * button_a_y + x_2 * button_b_y = target_y
 
             // Cramer's rule
             let det = button_a_x * button_b_y - button_a_y * button_b_x;
-
             if det == 0 {
                 return 0;
             }
@@ -77,7 +64,7 @@ fn solve(input: &[u8], part2: bool) -> u64 {
                 return 0;
             }
 
-            x_1 as u64 * cost_button_a as u64 + x_2 as u64 * cost_button_b as u64
+            x_1 as u64 * 3 + x_2 as u64
         })
         .sum()
 }
