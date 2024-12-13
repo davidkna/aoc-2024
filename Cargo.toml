@@ -56,7 +56,6 @@ path = "src/day-12/main.rs"
 [[bin]]
 name = "day-13"
 path = "src/day-13/main.rs"
-required-features = ["z3"]
 
 # [[bin]]
 # name = "day-14"
@@ -115,4 +114,3 @@ fnv = "1.0.7"
 itertools = "0.13.0"
 mimalloc-rust = "0.2.1"
 rayon = "1.10.0"
-z3 = { version = "0.12.1", features = ["static-link-z3"], optional = true }

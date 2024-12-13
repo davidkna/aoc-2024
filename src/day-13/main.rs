@@ -4,20 +4,19 @@ extern crate test;
 use bstr::ByteSlice;
 use itertools::Itertools;
 use rayon::prelude::*;
-use z3::ast::{Ast, Int};
-
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-13.txt");
 
-fn parse_digits(s: &[u8]) -> u64 {
-    s.iter().fold(0, |acc, &c| acc * 10 + (c - b'0') as u64)
+fn parse_digits(s: &[u8]) -> i64 {
+    s.iter().fold(0, |acc, &c| acc * 10 + (c - b'0') as i64)
 }
 
 fn solve(input: &[u8], part2: bool) -> u64 {
     let cost_button_a = 3i64;
     let cost_button_b = 1i64;
 
-    input.split_str("\n\n")
+    input
+        .split_str("\n\n")
         .collect_vec()
         .into_par_iter()
         .map(|section| {
@@ -25,9 +24,7 @@ fn solve(input: &[u8], part2: bool) -> u64 {
             let (button_a, button_b, prize) = lines.collect_tuple().unwrap();
 
             let (target_x, target_y) = {
-                let (l,r) =prize
-                    .split_once_str(", ")
-                    .unwrap();
+                let (l, r) = prize.split_once_str(", ").unwrap();
 
                 let (_, x_str) = l.split_once_str("=").unwrap();
                 let (_, y_str) = r.split_once_str("=").unwrap();
@@ -42,9 +39,7 @@ fn solve(input: &[u8], part2: bool) -> u64 {
             };
 
             let (button_a_x, button_a_y) = {
-                let (l,r) = button_a
-                    .split_once_str(", ")
-                    .unwrap();
+                let (l, r) = button_a.split_once_str(", ").unwrap();
 
                 let (_, x_str) = l.split_once_str("+").unwrap();
                 let (_, y_str) = r.split_once_str("+").unwrap();
@@ -53,9 +48,7 @@ fn solve(input: &[u8], part2: bool) -> u64 {
             };
 
             let (button_b_x, button_b_y) = {
-                let (l,r) = button_b
-                    .split_once_str(", ")
-                    .unwrap();
+                let (l, r) = button_b.split_once_str(", ").unwrap();
 
                 let (_, x_str) = l.split_once_str("+").unwrap();
                 let (_, y_str) = r.split_once_str("+").unwrap();
@@ -63,42 +56,33 @@ fn solve(input: &[u8], part2: bool) -> u64 {
                 (parse_digits(x_str), parse_digits(y_str))
             };
 
-            let ctx = z3::Context::new(&z3::Config::default());
-            let solver = z3::Optimize::new(&ctx);
+            // x_1 * button_a_x + x_2 * button_b_x = target_x
+            // x_1 * button_a_y + x_2 * button_b_y = target_y
 
-            let (
-                buttons_pressed_a,
-                buttons_pressed_b,
-            ) = (
-                Int::new_const(&ctx, "buttons_pressed_a"),
-                Int::new_const(&ctx, "buttons_pressed_b"),
-            );
-            solver.assert(&buttons_pressed_a.ge(&Int::from_i64(&ctx, 0)));
-            solver.assert(&buttons_pressed_b.ge(&Int::from_i64(&ctx, 0)));
+            // Cramer's rule
+            let det = button_a_x * button_b_y - button_a_y * button_b_x;
 
-            if !part2 {
-                solver.assert(&((&buttons_pressed_a)).le(&Int::from_i64(&ctx, 100i64)));
-                solver.assert(&((&buttons_pressed_b)).le(&Int::from_i64(&ctx, 100i64)));
-            }
-            solver.assert(
-                &((&buttons_pressed_a * button_a_x + &buttons_pressed_b * button_b_x)._eq(&Int::from_i64(&ctx, target_x as _))),
-            );
-            solver.assert(
-                &((&buttons_pressed_a * button_a_y + &buttons_pressed_b * button_b_y)._eq(&Int::from_i64(&ctx, target_y as _))),
-            );
-
-            solver.minimize(&(&buttons_pressed_a * cost_button_a + &buttons_pressed_b * cost_button_b));
-
-            if z3::SatResult::Sat != solver.check(&[]) {
+            if det == 0 {
                 return 0;
-            };
+            }
 
-            let model = solver.get_model().unwrap();
-            let cost_ast = buttons_pressed_a * cost_button_a + buttons_pressed_b * cost_button_b;
-            let final_cost = model.eval::<z3::ast::Int>(&cost_ast, true).unwrap().as_i64().unwrap();
+            let x_1 = (target_x * button_b_y - target_y * button_b_x) / det;
+            let x_2 = (button_a_x * target_y - button_a_y * target_x) / det;
 
-            final_cost as u64
-        }).sum()
+            if !part2 && (x_1 > 100 || x_2 > 100) {
+                return 0;
+            }
+
+            // Verify the solution to account for non-integer solutions
+            if x_1 * button_a_x + x_2 * button_b_x != target_x
+                || x_1 * button_a_y + x_2 * button_b_y != target_y
+            {
+                return 0;
+            }
+
+            x_1 as u64 * cost_button_a as u64 + x_2 as u64 * cost_button_b as u64
+        })
+        .sum()
 }
 
 fn part_1(input: &[u8]) -> u64 {
