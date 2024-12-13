@@ -3,7 +3,6 @@ extern crate test;
 
 use bstr::ByteSlice;
 use itertools::Itertools;
-use rayon::prelude::*;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-13.txt");
 
@@ -17,8 +16,6 @@ fn solve(input: &[u8], part2: bool) -> u64 {
 
     input
         .split_str("\n\n")
-        .collect_vec()
-        .into_par_iter()
         .map(|section| {
             let lines = section.lines();
             let (button_a, button_b, prize) = lines.collect_tuple().unwrap();
