@@ -2,7 +2,10 @@
 extern crate test;
 
 use bstr::ByteSlice;
-use cabac::traits::CabacWriter;
+use cabac::{
+    h265::{H265Context, H265Writer},
+    traits::CabacWriter,
+};
 use itertools::Itertools;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-14.txt");
@@ -120,7 +123,7 @@ fn part_2(input: &[u8], lim_x: i32, lim_y: i32, print: bool) -> u32 {
         .min_by_key(|_| {
             // Move Robots and mesure entropy
             let mut counter = CountWriter(0);
-            let mut cabac_writer = cabac::h265::H265Writer::new(&mut counter);
+            let mut cabac_writer = H265Writer::new(&mut counter);
             let mut grid = vec![false; (lim_x * lim_y) as usize];
 
             for ((x, y), (vx, _vy)) in &mut robots {
@@ -128,7 +131,7 @@ fn part_2(input: &[u8], lim_x: i32, lim_y: i32, print: bool) -> u32 {
                 grid[(*y * lim_x + *x) as usize] = true;
             }
 
-            let mut ctx = cabac::h265::H265Context::default();
+            let mut ctx = H265Context::default();
             for &cell in grid.iter() {
                 let _ = cabac_writer.put(cell, &mut ctx);
             }
@@ -142,7 +145,7 @@ fn part_2(input: &[u8], lim_x: i32, lim_y: i32, print: bool) -> u32 {
         .min_by_key(|_| {
             // Move Robots and mesure entropy
             let mut counter = CountWriter(0);
-            let mut cabac_writer = cabac::h265::H265Writer::new(&mut counter);
+            let mut cabac_writer = H265Writer::new(&mut counter);
             let mut grid = vec![false; (lim_x * lim_y) as usize];
 
             for ((x, y), (_vx, vy)) in &mut robots {
@@ -150,7 +153,7 @@ fn part_2(input: &[u8], lim_x: i32, lim_y: i32, print: bool) -> u32 {
                 grid[(*x * lim_y + *y) as usize] = true;
             }
 
-            let mut ctx = cabac::h265::H265Context::default();
+            let mut ctx = H265Context::default();
             for &cell in grid.iter() {
                 let _ = cabac_writer.put(cell, &mut ctx);
             }
