@@ -57,9 +57,9 @@ path = "src/day-12/main.rs"
 name = "day-13"
 path = "src/day-13/main.rs"
 
-# [[bin]]
-# name = "day-14"
-# path = "src/day-14/main.rs"
+[[bin]]
+name = "day-14"
+path = "src/day-14/main.rs"
 
 # [[bin]]
 # name = "day-15"
@@ -110,6 +110,7 @@ path = "src/lib.rs"
 
 [dependencies]
 bstr = "1.11.0"
+cabac = "0.12.0"
 fnv = "1.0.7"
 itertools = "0.13.0"
 mimalloc-rust = "0.2.1"
