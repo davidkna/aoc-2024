@@ -18,6 +18,31 @@ fn parse_uint(s: &[u8]) -> i32 {
     s.iter().fold(0, |acc, &c| acc * 10 + (c - b'0') as i32)
 }
 
+fn mod_inverse(a: i32, m: i32) -> i32 {
+    let mut a = a.rem_euclid(m);
+    let mut m = m;
+    let mut x0 = 0;
+    let mut x1 = 1;
+
+    while a > 1 {
+        let q = a / m;
+        let t = m;
+
+        m = a % m;
+        a = t;
+
+        let t = x0;
+        x0 = x1 - q * x0;
+        x1 = t;
+    }
+
+    if x1 < 0 {
+        x1 + m
+    } else {
+        x1
+    }
+}
+
 fn part_1(input: &[u8], lim_x: i32, lim_y: i32) -> u32 {
     input
         .lines()
@@ -54,11 +79,11 @@ fn part_1(input: &[u8], lim_x: i32, lim_y: i32) -> u32 {
         .product()
 }
 
-struct CountWriter(usize);
+struct CountWriter(u32);
 
 impl std::io::Write for CountWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0 += buf.len();
+        self.0 += buf.len() as u32;
 
         Ok(buf.len())
     }
@@ -68,7 +93,7 @@ impl std::io::Write for CountWriter {
     }
 }
 
-fn part_2(input: &[u8], lim_x: i32, lim_y: i32) -> u32 {
+fn part_2(input: &[u8], lim_x: i32, lim_y: i32, print: bool) -> u32 {
     let mut robots = input
         .lines()
         .map(|line| {
@@ -90,47 +115,93 @@ fn part_2(input: &[u8], lim_x: i32, lim_y: i32) -> u32 {
         })
         .collect_vec();
 
-    for it in 1.. {
-        // Move Robots and mesure entropy
-        let mut ctx = cabac::h265::H265Context::default();
-        let mut counter = CountWriter(0);
-        let mut cabac_writer = cabac::h265::H265Writer::new(&mut counter);
+    let steps = lim_x.max(lim_y);
+    let min_entropy_x_idx = (1..=steps)
+        .min_by_key(|_| {
+            // Move Robots and mesure entropy
+            let mut counter = CountWriter(0);
+            let mut cabac_writer = cabac::h265::H265Writer::new(&mut counter);
+
+            let mut grid = vec![vec![false; lim_x as usize]; lim_y as usize];
+
+            for ((x, y), (vx, _vy)) in &mut robots {
+                *x = (*x + *vx).rem_euclid(lim_x);
+                grid[*y as usize][*x as usize] = true;
+            }
+
+            let mut ctx = cabac::h265::H265Context::default();
+            for &cell in grid.iter().flatten() {
+                let _ = cabac_writer.put(cell, &mut ctx);
+            }
+
+            let _ = cabac_writer.finish();
+            counter.0
+        })
+        .unwrap();
+    // Y Axis
+    let min_entropy_y_idx = (1..=steps)
+        .min_by_key(|_| {
+            // Move Robots and mesure entropy
+            let mut counter = CountWriter(0);
+            let mut cabac_writer = cabac::h265::H265Writer::new(&mut counter);
+
+            let mut grid = vec![vec![false; lim_x as usize]; lim_y as usize];
+
+            for ((x, y), (_vx, vy)) in &mut robots {
+                *y = (*y + *vy).rem_euclid(lim_y);
+                grid[*y as usize][*x as usize] = true;
+            }
+
+            let mut ctx = cabac::h265::H265Context::default();
+            for &cell in grid.iter().flatten() {
+                let _ = cabac_writer.put(cell, &mut ctx);
+            }
+
+            let _ = cabac_writer.finish();
+            counter.0
+        })
+        .unwrap();
+
+    // Chinese Remainder Theorem
+    let result = min_entropy_x_idx
+        + ((min_entropy_y_idx - min_entropy_x_idx) * mod_inverse(lim_x, lim_y)).rem_euclid(lim_y)
+            * lim_x;
+
+    // Move Robots to the result
+    if print {
+        let steps_to_do = result - steps;
 
         let mut grid = vec![vec![false; lim_x as usize]; lim_y as usize];
 
         for ((x, y), (vx, vy)) in &mut robots {
-            *x = (*x + *vx).rem_euclid(lim_x);
-            *y = (*y + *vy).rem_euclid(lim_y);
+            *x = (*x + *vx * steps_to_do).rem_euclid(lim_x);
+            *y = (*y + *vy * steps_to_do).rem_euclid(lim_y);
 
             grid[*y as usize][*x as usize] = true;
         }
 
-        for &item in (grid).iter().flatten() {
-            let _ = cabac_writer.put(item, &mut ctx);
-        }
-
-        let _ = cabac_writer.finish();
-
-        let entropy = counter.0;
-
-        if entropy < 300 {
-            // Print the Grid
-            for row in grid {
-                for &cell in &row {
-                    print!("{}", if cell { '#' } else { '.' });
-                }
-                println!();
+        // Print the grid
+        for y in 0..lim_y {
+            for x in 0..lim_x {
+                print!(
+                    "{}",
+                    if grid[y as usize][x as usize] {
+                        '#'
+                    } else {
+                        '.'
+                    }
+                );
             }
-
-            return it;
+            println!();
         }
     }
-    unreachable!()
+
+    result as u32
 }
 
 fn main() {
     println!("Part 1: {}", part_1(INPUT, 101, 103));
-    println!("Part 2: {}", part_2(INPUT, 101, 103));
+    println!("Part 2: {}", part_2(INPUT, 101, 103, true));
 }
 
 #[cfg(test)]
@@ -164,6 +235,6 @@ p=9,5 v=-3,-3";
 
     #[bench]
     fn bench_part_2(b: &mut test::Bencher) {
-        b.iter(|| part_2(black_box(INPUT), 101, 103));
+        b.iter(|| part_2(black_box(INPUT), 101, 103, false));
     }
 }
