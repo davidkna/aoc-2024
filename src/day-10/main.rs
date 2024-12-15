@@ -84,8 +84,7 @@ fn find_path_rating(
                 let next_value = map[ny as usize][nx as usize];
                 if next_value == 9 && next_value == curr_value + 1 {
                     let pos = target_positions
-                        .iter()
-                        .position(|&(ty, tx)| (ny as usize, nx as usize) == (ty, tx))
+                        .binary_search(&(ny as usize, nx as usize))
                         .unwrap() as u32;
 
                     let mut out = [0; 3];
