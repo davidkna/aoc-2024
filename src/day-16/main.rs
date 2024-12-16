@@ -59,25 +59,6 @@ fn solve(input: &[u8]) -> (u32, u32) {
     // turn 1000 Points
 
     let estim_cost = |(x, y): (u32, u32)| -> Reverse<u32> {
-        // a) Minimum number of turns to face the target
-        // b) Minimum number of moves to reach the target
-
-        let turns = {
-            let dx = ex as i32 - x as i32;
-            let dy = ey as i32 - y as i32;
-
-            let mut turns = 0;
-            if dx != 0 {
-                turns += 1;
-            }
-
-            if dy != 0 {
-                turns += 1;
-            }
-
-            turns
-        };
-
         let moves = {
             let dx = (ex as i32 - x as i32).abs();
             let dy = (ey as i32 - y as i32).abs();
@@ -85,13 +66,13 @@ fn solve(input: &[u8]) -> (u32, u32) {
             dx as u32 + dy as u32
         };
 
-        Reverse(moves + 1000 * turns)
+        Reverse(moves)
     };
 
     heap.push((estim_cost((sx, sy)), 0, sx, sy, Dir::East, vec![(sx, sy)]));
     let mut final_cost = None;
     let mut path_tiles = FnvHashSet::default();
-    while let Some((_, cost, x, y, dir, path)) = heap.pop() {
+    while let Some((est_cost, cost, x, y, dir, path)) = heap.pop() {
         if (x, y) == (ex, ey) {
             if final_cost.is_none() {
                 final_cost = Some(cost);
@@ -107,7 +88,18 @@ fn solve(input: &[u8]) -> (u32, u32) {
             if x < cost {
                 continue;
             }
+            if x == cost && path_tiles.contains(&(x, y)) {
+                path_tiles.extend(path);
+                continue;
+            }
         }
+
+        if let Some(max_cost) = final_cost {
+            if est_cost.0 > max_cost {
+                break;
+            }
+        }
+
         visited[y as usize][x as usize][dir as usize] = Some(cost);
         let mut move_it = |step_dir: Dir, step_cost| {
             let (dx, dy) = step_dir.delta();
@@ -119,23 +111,33 @@ fn solve(input: &[u8]) -> (u32, u32) {
                 return;
             }
 
-            if visited[ny as usize][nx as usize][step_dir as usize]
-                .is_none_or(|c| c >= cost + step_cost)
-            {
-                let estim_dist_next =
-                    Reverse(estim_cost((nx as u32, ny as u32)).0 + cost + step_cost);
-                let mut p = path.clone();
-                p.push((nx as u32, ny as u32));
-
-                heap.push((
-                    estim_dist_next,
-                    cost + step_cost,
-                    nx as u32,
-                    ny as u32,
-                    step_dir,
-                    p,
-                ));
+            let prev_cost: u32 =
+                visited[ny as usize][nx as usize][step_dir as usize].unwrap_or(u32::MAX);
+            if prev_cost == cost + step_cost && path_tiles.contains(&(nx as u32, ny as u32)) {
+                path_tiles.extend(&path);
+                return;
             }
+
+            if prev_cost < cost + step_cost {
+                return;
+            }
+
+            let estim_dist_next = Reverse(estim_cost((nx as u32, ny as u32)).0 + cost + step_cost);
+            let mut p = path.clone();
+            p.push((nx as u32, ny as u32));
+
+            if estim_dist_next.0 > final_cost.unwrap_or(u32::MAX) {
+                return;
+            }
+
+            heap.push((
+                estim_dist_next,
+                cost + step_cost,
+                nx as u32,
+                ny as u32,
+                step_dir,
+                p,
+            ));
         };
 
         // Move Forward
