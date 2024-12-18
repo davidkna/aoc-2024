@@ -1,9 +1,13 @@
 #![feature(test)]
 extern crate test;
 
-use std::{cmp::Reverse, collections::BinaryHeap};
+use std::{
+    cmp,
+    collections::{BinaryHeap, VecDeque},
+};
 
 use bstr::ByteSlice;
+use itertools::Itertools;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-18.txt");
 
@@ -16,7 +20,7 @@ fn solve<const GRIDSIZE: usize>(corruption: &[Vec<bool>]) -> Option<u32> {
     let end = (GRIDSIZE - 1, GRIDSIZE - 1);
 
     let mut q = BinaryHeap::new();
-    q.push((Reverse(2 * (GRIDSIZE - 1)), 0usize, (start)));
+    q.push(((2 * (GRIDSIZE - 1)), 0usize, (start)));
 
     let mut visited = vec![vec![false; GRIDSIZE]; GRIDSIZE];
 
@@ -45,7 +49,7 @@ fn solve<const GRIDSIZE: usize>(corruption: &[Vec<bool>]) -> Option<u32> {
                 continue;
             }
             q.push((
-                Reverse(dist + 1 + (GRIDSIZE - 1 - nx) + (GRIDSIZE - 1 - ny)),
+                (dist + 1 + (GRIDSIZE - 1 - nx) + (GRIDSIZE - 1 - ny)),
                 dist + 1,
                 (nx, ny),
             ));
@@ -72,20 +76,60 @@ fn part_1<const GRIDSIZE: usize, const LIMIT: usize>(input: &[u8]) -> u32 {
 }
 
 fn part_2<const GRIDSIZE: usize, const LIMIT: usize>(input: &[u8]) -> String {
-    let corruption = input.lines().map(|line| {
-        let (x, y) = line.split_once_str(",").unwrap();
-        (parse_digits(x), parse_digits(y))
-    });
+    let corruption = input
+        .lines()
+        .map(|line| {
+            let (x, y) = line.split_once_str(",").unwrap();
+            (parse_digits(x), parse_digits(y))
+        })
+        .collect_vec();
 
-    let mut curroption_map = vec![vec![false; GRIDSIZE]; GRIDSIZE];
+    let start = (0, 0);
+    let end = (GRIDSIZE - 1, GRIDSIZE - 1);
 
-    for (i, (x, y)) in corruption.enumerate() {
-        curroption_map[y as usize][x as usize] = true;
-        if i >= LIMIT && solve::<GRIDSIZE>(&curroption_map).is_none() {
-            return format!("{x},{y}");
+    let mut q = VecDeque::new();
+    let corruption_map = corruption.iter().enumerate().fold(
+        vec![vec![usize::MAX; GRIDSIZE]; GRIDSIZE],
+        |mut acc, (i, &(x, y))| {
+            acc[y as usize][x as usize] = i;
+            acc
+        },
+    );
+    let mut visited: Vec<Vec<usize>> = vec![vec![LIMIT; GRIDSIZE]; GRIDSIZE];
+
+    q.push_back((corruption_map[start.1][start.0], start));
+    let mut min_value = 0;
+    while let Some((dist, (x, y))) = q.pop_front() {
+        if (x, y) == end {
+            min_value = cmp::max(min_value, dist);
+            continue;
+        }
+
+        if visited[y][x] >= dist {
+            continue;
+        }
+        visited[y][x] = dist;
+
+        for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+            let (Some(nx), Some(ny)) = (
+                usize::try_from(x as i32 + dx).ok(),
+                usize::try_from(y as i32 + dy).ok(),
+            ) else {
+                continue;
+            };
+
+            let Some(&grid_tile) = corruption_map.get(ny).and_then(|col| col.get(nx)) else {
+                continue;
+            };
+            if visited[ny][nx] >= dist {
+                continue;
+            }
+
+            q.push_back((cmp::min(dist, grid_tile), (nx, ny)));
         }
     }
-    unreachable!()
+    let (x, y) = corruption[min_value];
+    format!("{x},{y}")
 }
 
 fn main() {
@@ -137,11 +181,11 @@ mod tests {
 
     #[bench]
     fn bench_part_1(b: &mut test::Bencher) {
-        b.iter(|| part_1::<70, 1024>(black_box(INPUT)));
+        b.iter(|| part_1::<71, 1024>(black_box(INPUT)));
     }
 
     #[bench]
     fn bench_part_2(b: &mut test::Bencher) {
-        b.iter(|| part_2::<70, 1024>(black_box(INPUT)));
+        b.iter(|| part_2::<71, 1024>(black_box(INPUT)));
     }
 }
