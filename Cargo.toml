@@ -73,9 +73,9 @@ path = "src/day-16/main.rs"
 name = "day-17"
 path = "src/day-17/main.rs"
 
-# [[bin]]
-# name = "day-18"
-# path = "src/day-18/main.rs"
+[[bin]]
+name = "day-18"
+path = "src/day-18/main.rs"
 
 # [[bin]]
 # name = "day-19"
