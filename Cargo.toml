@@ -77,9 +77,9 @@ path = "src/day-17/main.rs"
 name = "day-18"
 path = "src/day-18/main.rs"
 
-# [[bin]]
-# name = "day-19"
-# path = "src/day-19/main.rs"
+[[bin]]
+name = "day-19"
+path = "src/day-19/main.rs"
 
 # [[bin]]
 # name = "day-20"
@@ -115,3 +115,4 @@ fnv = "1.0.7"
 itertools = "0.13.0"
 mimalloc-rust = "0.2.1"
 rayon = "1.10.0"
+regex = { version = "1.11.1", features = ["perf-dfa-full"] }
