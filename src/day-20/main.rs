@@ -1,10 +1,44 @@
 #![feature(test)]
 extern crate test;
 
+use std::collections::VecDeque;
+
 use bstr::ByteSlice;
 use itertools::Itertools;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-20.txt");
+
+fn fill_distances(grid: &[&[u8]], start: (usize, usize), distances: &mut Vec<Vec<i32>>) {
+    let height = grid.len();
+    let width = grid[0].len();
+    let mut queue = VecDeque::new();
+    queue.push_back((0, start));
+
+    while let Some((distance, (y, x))) = queue.pop_front() {
+        if distances[y][x] <= distance {
+            continue;
+        }
+        distances[y][x] = distance;
+
+        for (dy, dx) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+            let (ny, nx) = (y as i32 + dy, x as i32 + dx);
+            if ny < 0 || ny >= height as i32 || nx < 0 || nx >= width as i32 {
+                continue;
+            }
+            let (ny, nx) = (ny as usize, nx as usize);
+
+            if grid[ny][nx] == b'#' {
+                continue;
+            }
+
+            if distances[ny][nx] <= distance + 1 {
+                continue;
+            }
+
+            queue.push_back((distance + 1, (ny, nx)));
+        }
+    }
+}
 
 fn solve<const MIN_SAVINGS: i32, const CHEAT_STEPS: i32>(input: &[u8]) -> u32 {
     let grid = input.lines().collect_vec();
@@ -25,61 +59,9 @@ fn solve<const MIN_SAVINGS: i32, const CHEAT_STEPS: i32>(input: &[u8]) -> u32 {
 
     // Walk grid and store min distance to target for each cell
     let mut distances_to_end = vec![vec![i32::MAX; width]; height];
-    let mut queue = vec![];
-    queue.push((0, target));
-
-    while let Some((distance, (y, x))) = queue.pop() {
-        if distances_to_end[y][x] <= distance {
-            continue;
-        }
-        distances_to_end[y][x] = distance;
-
-        for (dy, dx) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
-            let (ny, nx) = (y as i32 + dy, x as i32 + dx);
-            if ny < 0 || ny >= height as i32 || nx < 0 || nx >= width as i32 {
-                continue;
-            }
-            let (ny, nx) = (ny as usize, nx as usize);
-
-            if grid[ny][nx] == b'#' {
-                continue;
-            }
-
-            if distances_to_end[ny][nx] <= distance + 1 {
-                continue;
-            }
-
-            queue.push((distance + 1, (ny, nx)));
-        }
-    }
-
     let mut distances_to_start = vec![vec![i32::MAX; width]; height];
-    let mut queue = vec![];
-    queue.push((0, start));
-    while let Some((distance, (y, x))) = queue.pop() {
-        if distances_to_start[y][x] <= distance {
-            continue;
-        }
-        distances_to_start[y][x] = distance;
-
-        for (dy, dx) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
-            let (ny, nx) = (y as i32 + dy, x as i32 + dx);
-            if ny < 0 || ny >= height as i32 || nx < 0 || nx >= width as i32 {
-                continue;
-            }
-            let (ny, nx) = (ny as usize, nx as usize);
-
-            if grid[ny][nx] == b'#' {
-                continue;
-            }
-
-            if distances_to_start[ny][nx] <= distance + 1 {
-                continue;
-            }
-
-            queue.push((distance + 1, (ny, nx)));
-        }
-    }
+    fill_distances(&grid, target, &mut distances_to_end);
+    fill_distances(&grid, start, &mut distances_to_start);
 
     let base_score = distances_to_end[start.0][start.1];
 
