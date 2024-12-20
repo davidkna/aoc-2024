@@ -6,35 +6,6 @@ use itertools::Itertools;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-20.txt");
 
-fn manhattan_neighbors(
-    point: (usize, usize),
-    distance: i32,
-    width: usize,
-    height: usize,
-) -> Vec<(usize, usize)> {
-    let (y, x) = point;
-    let mut result = Vec::new();
-
-    for dy in -distance..=distance {
-        let ny = y as i32 + dy;
-        if ny < 0 || ny >= height as i32 {
-            continue;
-        }
-
-        let remaining = distance - dy.abs();
-        for dx in -remaining..=remaining {
-            let nx = x as i32 + dx;
-            if nx < 0 || nx >= width as i32 {
-                continue;
-            }
-
-            result.push((ny as usize, nx as usize));
-        }
-    }
-
-    result
-}
-
 fn solve<const MIN_SAVINGS: i32, const CHEAT_STEPS: i32>(input: &[u8]) -> u32 {
     let grid = input.lines().collect_vec();
     let height = grid.len();
@@ -121,24 +92,42 @@ fn solve<const MIN_SAVINGS: i32, const CHEAT_STEPS: i32>(input: &[u8]) -> u32 {
             }
 
             let base_steps = distances_to_start[y][x];
-            let possible_steps = manhattan_neighbors((y, x), CHEAT_STEPS, width, height)
-                .into_iter()
-                .filter(|&(ny, nx)| {
-                    grid.get(ny)
-                        .is_some_and(|row| row.get(nx).is_some_and(|f| *f != b'#'))
-                })
-                .filter(|&(ny, nx)| distances_to_end[ny][nx] != i32::MAX);
+            for dy in -CHEAT_STEPS..=CHEAT_STEPS {
+                let ny = y as i32 + dy;
+                if ny < 0 || ny >= height as i32 {
+                    continue;
+                }
+                let ny = ny as usize;
 
-            for (ny, nx) in possible_steps {
-                let new_distance = distances_to_end[ny][nx];
+                let remaining = CHEAT_STEPS - dy.abs();
+                for dx in -remaining..=remaining {
+                    let nx = x as i32 + dx;
+                    if nx < 0 || nx >= width as i32 {
+                        continue;
+                    }
+                    let nx = nx as usize;
 
-                let cheated_distance = (y.abs_diff(ny) + x.abs_diff(nx)) as i32;
+                    if grid
+                        .get(ny)
+                        .is_none_or(|row| row.get(nx).is_none_or(|f| *f == b'#'))
+                    {
+                        continue;
+                    }
 
-                let score = base_steps + cheated_distance + new_distance;
-                let savings = base_score - score;
+                    if distances_to_end[ny][nx] == i32::MAX {
+                        continue;
+                    }
 
-                if savings >= MIN_SAVINGS {
-                    count += 1;
+                    let new_distance = distances_to_end[ny][nx];
+
+                    let cheated_distance = (y.abs_diff(ny) + x.abs_diff(nx)) as i32;
+
+                    let score = base_steps + cheated_distance + new_distance;
+                    let savings = base_score - score;
+
+                    if savings >= MIN_SAVINGS {
+                        count += 1;
+                    }
                 }
             }
         }
