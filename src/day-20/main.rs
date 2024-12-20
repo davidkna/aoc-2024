@@ -8,7 +8,7 @@ use itertools::Itertools;
 
 const INPUT: &[u8] = include_bytes!("../../inputs/day-20.txt");
 
-fn fill_distances(grid: &[&[u8]], start: (usize, usize), distances: &mut Vec<Vec<i32>>) {
+fn fill_distances(grid: &[&[u8]], start: (usize, usize), distances: &mut [Vec<i32>]) {
     let height = grid.len();
     let width = grid[0].len();
     let mut queue = VecDeque::new();
@@ -42,8 +42,8 @@ fn fill_distances(grid: &[&[u8]], start: (usize, usize), distances: &mut Vec<Vec
 
 fn solve<const MIN_SAVINGS: i32, const CHEAT_STEPS: i32>(input: &[u8]) -> u32 {
     let grid = input.lines().collect_vec();
-    let height = grid.len();
-    let width = grid[0].len();
+    let height = grid.len() - 1;
+    let width = grid[0].len() - 1;
 
     let start = grid
         .iter()
@@ -76,7 +76,7 @@ fn solve<const MIN_SAVINGS: i32, const CHEAT_STEPS: i32>(input: &[u8]) -> u32 {
             let base_steps = distances_to_start[y][x];
             for dy in -CHEAT_STEPS..=CHEAT_STEPS {
                 let ny = y as i32 + dy;
-                if ny < 0 || ny >= height as i32 {
+                if ny < 1 || ny >= height as i32 {
                     continue;
                 }
                 let ny = ny as usize;
@@ -84,25 +84,17 @@ fn solve<const MIN_SAVINGS: i32, const CHEAT_STEPS: i32>(input: &[u8]) -> u32 {
                 let remaining = CHEAT_STEPS - dy.abs();
                 for dx in -remaining..=remaining {
                     let nx = x as i32 + dx;
-                    if nx < 0 || nx >= width as i32 {
+                    if nx < 1 || nx >= width as i32 {
                         continue;
                     }
                     let nx = nx as usize;
 
-                    if grid
-                        .get(ny)
-                        .is_none_or(|row| row.get(nx).is_none_or(|f| *f == b'#'))
-                    {
-                        continue;
-                    }
-
-                    if distances_to_end[ny][nx] == i32::MAX {
+                    if grid[ny][nx] == b'#' || distances_to_start[ny][nx] == i32::MAX {
                         continue;
                     }
 
                     let new_distance = distances_to_end[ny][nx];
-
-                    let cheated_distance = (y.abs_diff(ny) + x.abs_diff(nx)) as i32;
+                    let cheated_distance = dy.abs() + dx.abs();
 
                     let score = base_steps + cheated_distance + new_distance;
                     let savings = base_score - score;
